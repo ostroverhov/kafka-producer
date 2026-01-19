@@ -1,0 +1,78 @@
+services:
+  kafka:
+    image: apache/kafka:4.1.1
+    container_name: kafka
+    ports:
+      - "9094:9094"
+    environment:
+      # KRaft обязательное
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+
+      # listeners (internal для docker-сети, external для хоста)
+      KAFKA_LISTENERS: "INTERNAL://:9092,EXTERNAL://:9094,CONTROLLER://:9093"
+      KAFKA_ADVERTISED_LISTENERS: "INTERNAL://kafka:9092,EXTERNAL://localhost:9094"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
+
+      # для single-broker, иначе часто ругается при создании топиков/транзакциях
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+
+  postgres_producer:
+    image: 'postgres:latest'
+    container_name: postgres_producer
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: service_producer
+      POSTGRES_USER: producer
+      POSTGRES_PASSWORD: qwerty
+
+  postgres_consumer:
+    image: 'postgres:latest'
+    container_name: postgres_consumer
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: service_consumer
+      POSTGRES_USER: consumer
+      POSTGRES_PASSWORD: qwerty
+
+#  kafka-producer:
+#    build: ./kafka-producer
+#    container_name: kafka-producer
+#    ports:
+#      - "8081:8080"
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_producer:5432/service_producer
+#      SPRING_DATASOURCE_USERNAME: producer
+#      SPRING_DATASOURCE_PASSWORD: qwerty
+#      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+#    depends_on:
+#      postgres_producer:
+#        condition: service_healthy
+#      kafka:
+#        condition: service_started
+
+#  kafka-consumer:
+#    build: ./kafka-consumer
+#    container_name: kafka-consumer
+#    ports:
+#      - "8082:8080"
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_consumer:5432/service_consumer
+#      SPRING_DATASOURCE_USERNAME: consumer
+#      SPRING_DATASOURCE_PASSWORD: qwerty
+#      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+#    depends_on:
+#      postgres_consumer:
+#        condition: service_healthy
+#      kafka:
+#        condition: service_started
+
