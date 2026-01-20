@@ -33,6 +33,11 @@ services:
       POSTGRES_DB: service_producer
       POSTGRES_USER: producer
       POSTGRES_PASSWORD: qwerty
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U producer -d service_producer" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   postgres_consumer:
     image: 'postgres:latest'
@@ -43,36 +48,41 @@ services:
       POSTGRES_DB: service_consumer
       POSTGRES_USER: consumer
       POSTGRES_PASSWORD: qwerty
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U consumer -d service_consumer" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-#  kafka-producer:
-#    build: ./kafka-producer
-#    container_name: kafka-producer
-#    ports:
-#      - "8081:8080"
-#    environment:
-#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_producer:5432/service_producer
-#      SPRING_DATASOURCE_USERNAME: producer
-#      SPRING_DATASOURCE_PASSWORD: qwerty
-#      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-#    depends_on:
-#      postgres_producer:
-#        condition: service_healthy
-#      kafka:
-#        condition: service_started
+  kafka-producer:
+    build: ../kafka-producer
+    container_name: kafka-producer
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_producer:5432/service_producer
+      SPRING_DATASOURCE_USERNAME: producer
+      SPRING_DATASOURCE_PASSWORD: qwerty
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      postgres_producer:
+        condition: service_healthy
+      kafka:
+        condition: service_started
 
-#  kafka-consumer:
-#    build: ./kafka-consumer
-#    container_name: kafka-consumer
-#    ports:
-#      - "8082:8080"
-#    environment:
-#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_consumer:5432/service_consumer
-#      SPRING_DATASOURCE_USERNAME: consumer
-#      SPRING_DATASOURCE_PASSWORD: qwerty
-#      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-#    depends_on:
-#      postgres_consumer:
-#        condition: service_healthy
-#      kafka:
-#        condition: service_started
+  kafka-consumer:
+    build: ../kafka-consumer
+    container_name: kafka-consumer
+    ports:
+      - "8082:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_consumer:5432/service_consumer
+      SPRING_DATASOURCE_USERNAME: consumer
+      SPRING_DATASOURCE_PASSWORD: qwerty
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      postgres_consumer:
+        condition: service_healthy
+      kafka:
+        condition: service_started
 
